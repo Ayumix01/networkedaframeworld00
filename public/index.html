@@ -1,0 +1,409 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Remix Reality</title>
+    <meta name="description" content="Remix Reality">
+
+	<!--AFrame 1.0.4 library can be directly used from their CDN by uncommenting the line below-->
+   <script src="https://aframe.io/releases/1.0.4/aframe.min.js "></script>
+	<script src="../js/aframe.1.0.4.min.js"></script>
+    
+    
+ <!--       <script src="https://aframe.io/releases/1.0.3/aframe.min.js"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.slim.js"></script>
+    <script src="https://unpkg.com/networked-aframe@^0.7.1/dist/networked-aframe.min.js"></script>
+
+    <script src="https://unpkg.com/aframe-randomizer-components@^3.0.1/dist/aframe-randomizer-components.min.js"></script>
+    <script src="https://unpkg.com/aframe-particle-system-component@1.0.5/dist/aframe-particle-system-component.min.js"></script>
+    <script src="/js/spawn-in-circle.component.js"></script>
+    
+    
+
+<script src="https://unpkg.com/aframe-teleport-controls@0.3.x/dist/aframe-teleport-controls.min.js"></script>
+     <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+     <script>
+      // WebXR requires HTTPS, so the site doesn't work if someone manually enters
+      // the URL and ends up using HTTP. To work around this, force redirect from
+      // http to https for non-localhost addresses.
+      if (window.location.protocol == "http:" &&
+          window.location.hostname != "localhost" && 
+          window.location.hostname != "127.0.0.1" &&
+          window.location.hostname != "[::1]") {
+        window.location = window.location.href.replace('http:', 'https:');        
+      }
+    </script>  
+    
+      <script src="https://unpkg.com/aframe-extras@3.3.0/dist/aframe-extras.min.js"></script>
+    <script src="https://unpkg.com/aframe-environment-component@1.1.0/dist/aframe-environment-component.min.js"></script>
+
+    <script>
+      // Define a few custom components useful for AR mode. While these are somewhat reusable,
+      // I recommend checking if there are officially supported alternatives before copying
+      // these into new projects.
+    var el = document.querySelector('#sky');
+      // See also https://github.com/aframevr/aframe/pull/4356
+      AFRAME.registerComponent('hide-in-ar-mode', {
+        // Set this object invisible while in AR mode.
+        init: function () {
+          this.el.sceneEl.addEventListener('enter-vr', (ev) => {
+            this.wasVisible = this.el.getAttribute('visible');
+            if (this.el.sceneEl.is('ar-mode')) {
+              this.el.setAttribute('visible', false);
+            }
+          });
+          this.el.sceneEl.addEventListener('exit-vr', (ev) => {
+            if (this.wasVisible) this.el.setAttribute('visible', true);
+          });
+        }
+      });
+      
+      AFRAME.registerComponent('ar-shadows', {
+        // Swap an object's material to a transparent shadows-only material while
+        // in AR mode. Intended for use with a ground plane. The object is also
+        // set visible while in AR mode, this is useful if it's hidden in other
+        // modes due to them using a 3D environment.
+        schema: {
+          opacity: {default: 0.3}
+        },
+        init: function () {
+          this.el.sceneEl.addEventListener('enter-vr', (ev) => {
+            this.wasVisible = this.el.getAttribute('visible');
+            if (this.el.sceneEl.is('ar-mode')) {
+              this.savedMaterial = this.el.object3D.children[0].material;
+              this.el.object3D.children[0].material = new THREE.ShadowMaterial();
+              this.el.object3D.children[0].material.opacity = this.data.opacity;
+              this.el.setAttribute('visible', true);
+            }
+          });
+          this.el.sceneEl.addEventListener('exit-vr', (ev) => {
+            if (this.savedMaterial) {
+              this.el.object3D.children[0].material = this.savedMaterial;
+              this.savedMaterial = null;
+            }
+            if (!this.wasVisible) this.el.setAttribute('visible', false);
+          });
+        }
+      });    
+  </script>
+    
+    <!-- import the webpage's stylesheet -->
+    <link rel="stylesheet" href="/style.css">
+    
+  </head>
+  <body>
+    
+
+    
+    <!-- Network enabled scene -->
+    <a-scene networked-scene="
+      room: basic;
+      debug: true;
+    ">
+      
+      <!-- VR controls -->
+      <!-- Vive. -->
+<a-entity vive-controls="hand: left"></a-entity>
+<a-entity vive-controls="hand: right"></a-entity>
+
+<!-- Or Rift. -->
+<a-entity oculus-touch-controls="hand: left"></a-entity>
+<a-entity oculus-touch-controls="hand: right"></a-entity>
+         
+<a-entity id="teleHand" hand-controls="hand: left" teleport-controls="type: parabolic; collisionEntities: [mixin='voxel'], #ground"></a-entity>    
+      
+      
+      <!-- Environment for 2D and VR viewing. It's auto-hidden in AR mode. 
+      <a-entity environment="preset: forest; lighting: none; shadow: none; lightPosition: 0 2.15 0"
+                hide-in-ar-mode></a-entity> -->
+      
+      <a-entity id="pack" position="-1 0 -3" scale="0.1 0.1 0.1">
+        <a-entity position="0 0 0" rotation="0 55 0"
+                  gltf-model="#pack"
+                  animation-mixer
+                  shadow="cast: true; receive: false"></a-entity>
+        
+      </a-entity>  
+     
+
+    <!-- cityscape -->
+         
+      <a-gltf-model
+        position="9 1 12"
+        rotation="0 0 0"
+        src="https://cdn.glitch.com/f8556383-5bd6-4354-b7da-ab49640802bc%2Fjpeg9.glb?v=1621009246867">
+</a-gltf-model>d
+      
+      
+       <a-gltf-model
+        position="-32 1.5 -15"
+        rotation="0 0 0"
+        src="https://cdn.glitch.com/f8556383-5bd6-4354-b7da-ab49640802bc%2Farcademachine.glb?v=1620947971048"
+        >
+</a-gltf-model>
+      
+              <a-gltf-model
+        position="32 1.5 -15"
+        rotation="0 -90 0"
+        src="https://cdn.glitch.com/f8556383-5bd6-4354-b7da-ab49640802bc%2Fchairtable3.glb?v=1620939162376"
+        >
+</a-gltf-model>
+      
+              <a-gltf-model
+        position="29 1.5 -15"
+        rotation="0 -90 0"
+        src="https://cdn.glitch.com/f8556383-5bd6-4354-b7da-ab49640802bc%2Fchairtable3.glb?v=1620939162376"
+        >
+</a-gltf-model>
+      
+              <a-gltf-model
+        position="26 1.5 -15"
+        rotation="0 -90 0"
+        src="https://cdn.glitch.com/f8556383-5bd6-4354-b7da-ab49640802bc%2Fchairtable3.glb?v=1620939162376"
+        >
+</a-gltf-model>
+      
+              <a-gltf-model
+        position="23 1.5 -15"
+        rotation="0 -90 0"
+        src="https://cdn.glitch.com/f8556383-5bd6-4354-b7da-ab49640802bc%2Fchairtable3.glb?v=1620939162376"
+        >
+</a-gltf-model>
+s
+        <a-gltf-model
+        position="20 1.5 -15"
+        rotation="0 -90 0"
+        src="https://cdn.glitch.com/f8556383-5bd6-4354-b7da-ab49640802bc%2Fchairtable3.glb?v=1620939162376"
+        >
+</a-gltf-model>
+      
+              <a-gltf-model
+        position="17 1.5 -15"
+        rotation="0 -90 0"
+        src="https://cdn.glitch.com/f8556383-5bd6-4354-b7da-ab49640802bc%2Fchairtable3.glb?v=1620939162376"
+        >
+</a-gltf-model>
+      
+         <a-gltf-model
+        position="27 .2 -25"
+        rotation="0 0 0"
+        src="https://cdn.glitch.com/5d13426e-90f4-4bdf-ac3d-def74ef78321%2Fseattable.glb?v=1620809081894"
+        >
+</a-gltf-model>
+      
+            <a-gltf-model
+        position="10 16 -19"
+        rotation="0 0 90"
+        src="https://cdn.glitch.com/5d13426e-90f4-4bdf-ac3d-def74ef78321%2FUntitled_17.glb?v=1620867563197"
+      ></a-gltf-model>
+  
+      
+       <a-gltf-model
+      position="25 0.3 -20"
+      rotation="0 -180 0"
+      src="https://cdn.glitch.com/5d13426e-90f4-4bdf-ac3d-def74ef78321%2FBUILDING2.glb?v=1620920923825">
+      </a-gltf-model>
+      
+             <a-gltf-model
+      position="25 0.3 -50"
+      rotation="0 -180 0"
+      src="https://cdn.glitch.com/f8556383-5bd6-4354-b7da-ab49640802bc%2Ftnatw1.glb?v=1621407394247">
+      </a-gltf-model>
+      
+      
+      <a-gltf-model
+      position="-25 0.3 -20"
+      rotation="0 0 0"
+      src="https://cdn.glitch.com/f8556383-5bd6-4354-b7da-ab49640802bc%2FBUILDING4.glb?v=1620949573207">
+      </a-gltf-model>
+      
+      
+           <a-gltf-model
+      position="-25 0.3 -50"
+      rotation="0 0 0"
+      src="https://cdn.glitch.com/f8556383-5bd6-4354-b7da-ab49640802bc%2Ftnatw1.glb?v=1621293704462">
+      </a-gltf-model>
+   
+      
+      
+      
+      <a-gltf-model
+      position="0 1 -10"
+      rotation="0 -90 0"
+      src="https://cdn.glitch.com/f8556383-5bd6-4354-b7da-ab49640802bc%2Fvicheights.glb?v=1621418607828">
+      </a-gltf-model>
+
+ <!-- All City Video -->
+         
+<a-video position="25 6 16" rotation="0 -90 0" src="https://cdn.glitch.com/f8556383-5bd6-4354-b7da-ab49640802bc%2F848799c522f4524feb6c43cf9224be7c.mp4?v=1620975765284" width="16" height="9"></a-video>
+      
+     <!-- <a-plane src="https://i.imgur.c"om/U3awF40.gif" rotation="-90 0 0" width="330" height="330" repeat="10 10"></a-plane>-->
+    
+         
+         <!-- shape decoration -->
+<a-dodecahedron position="-8 2 -1" color = "yellow" ></a-dodecahedron>
+      
+<a-box position="0 0 0" rotation="0 0 0" color="#643200" scale = "10 .2 150"></a-box>
+      
+<a-plane position="0 0 0" rotation="-90 0 0" color="#008000" scale = "300 300 300"></a-plane>
+   
+      
+   <!-- Ready Player Me iframe script and on start -->
+
+<input type="button" value="Start" onclick="makeAvatar()" />
+<div class="container"><iframe src="https://www.virtual-reality.city/app/public/rpm.html" title="RPM" allowfullscreen="yes" allowvr="yes"></iframe></div>
+<script>window.addEventListener("message", receiveMessage, false);</script>
+        
+      
+
+      
+      
+            
+
+      
+      
+      
+      
+      
+      <a-assets>
+
+        <img id="grid" src="https://img.gs/bbdkhfbzkk/stretch/https://i.imgur.com/25P1geh.png" crossorigin="anonymous">
+        
+        <!-- Templates -->
+
+        <!-- Avatar -->
+        <template id="avatar-template">
+          <a-entity class="avatar">
+            <a-sphere class="head"
+              color="#5985ff"
+              scale="0.45 0.5 0.4"
+              random-color
+            ></a-sphere>
+            <a-entity class="face"
+              position="0 0.05 0"
+            >
+              <a-sphere class="eye"
+                color="#efefef"
+                position="0.16 0.1 -0.35"
+                scale="0.12 0.12 0.12"
+              >
+                <a-sphere class="pupil"
+                  color="#000"
+                  position="0 0 -1"
+                  scale="0.2 0.2 0.2"
+                ></a-sphere>
+              </a-sphere>
+              <a-sphere class="eye"
+                color="#efefef"
+                position="-0.16 0.1 -0.35"
+                scale="0.12 0.12 0.12"
+              >
+                <a-sphere class="pupil"
+                  color="#000"
+                  position="0 0 -1"
+                  scale="0.2 0.2 0.2"
+                ></a-sphere>
+              </a-sphere>
+            </a-entity>
+          </a-entity>
+        </template>
+
+        <!-- /Templates -->
+        
+        
+        
+        
+      </a-assets>
+
+      <a-entity id="player"
+                camera
+                networked="template:#avatar-template;attachTemplateToLocal:false;"
+                position="0 1.6 .5"
+                spawn-in-circle="radius:3"
+                wasd-controls
+                look-controls>
+        <a-sphere class="head"
+          visible="false"
+          random-color
+        ></a-sphere>
+      </a-entity>
+
+      <a-entity position="0 0 0"
+        geometry="primitive: plane; width: 10000; height: 10000;" rotation="-90 0 0"
+        material="src: #grid; repeat: 10000 10000; transparent: true; metalness:0.6; roughness: 0.4; sphericalEnvMap: #sky;"></a-entity>
+
+      <a-entity light="color: #ccccff; intensity: 1; type: ambient;" visible=""></a-entity>
+      <a-entity light="color: #ffaaff; intensity: 1.5" position="5 5 5"></a-entity>
+
+       <!-- <img id="sky" src="https://img.gs/bbdkhfbzkk/2048x2048,stretch/http://i.imgur.com/WqlqEkq.jpg" crossorigin="anonymous" hide-in-ar-mode>
+-->
+      
+      <a-sky src="https://img.gs/bbdkhfbzkk/2048x2048,stretch/http://i.imgur.com/WqlqEkq.jpg" rotation="0 -90 0" hide-in-ar-mode></a-sky>
+      <a-entity id="particles" particle-system="preset: snow"></a-entity>
+    </a-scene>
+
+    <script>
+      // On mobile remove elements that are resource heavy
+      var isMobile = AFRAME.utils.device.isMobile();
+
+      if (isMobile) {
+        var particles = document.getElementById('particles');
+        particles.parentNode.removeChild(particles);
+      }
+      
+      // Define custom schema for syncing avatar color, set by random-color
+      NAF.schemas.add({
+        template: '#avatar-template',
+        components: [
+          'position',
+          'rotation',
+          {
+            selector: '.head',
+            component: 'material',
+            property: 'color'
+          }
+        ]
+      });
+    </script>
+    
+    <div id="text">
+      <h1>A-Frame Pack test for VR/AR</h1>
+    
+      <p>
+     
+      </p>
+      <p>
+        Size: <button id="btn_full">Full</button>
+        <button id="btn_half">1/2</button>
+        <button id="btn_quarter">1/4</button>
+      </p>
+      
+      <p>
+        This requires browser support for WebXR's AR mode, for example an
+        <a href="https://developers.google.com/ar/discover/supported-devices">ARCore-compatible</a>
+        Android phone with Chrome version 81 or higher.
+      </p>
+      
+      <p>
+        Powered by <a href="https://aframe.io/blog/aframe-v1.0.0/">A-Frame v1.0.0</a>.
+      </p>
+    </div>
+    <script>
+      function setSize(scale) {
+        document.getElementById('pack').setAttribute('scale', {x: scale, y: scale, z: scale});
+      }
+      document.getElementById('btn_full').onclick = setSize.bind(this, 1);
+      document.getElementById('btn_half').onclick = setSize.bind(this, 0.5);
+      document.getElementById('btn_quarter').onclick = setSize.bind(this, 0.25);
+    </script>
+    
+    
+    <a-entity position="0 2.25 -15" particle-system="preset: dust; color: #0000FF,#00FF00,#FF0000"></a-entity>
+
+    <!-- include the Glitch button to show what the webpage is about and
+          to make it easier for folks to view source and remix -->
+    <div class="glitchButton" style="position:fixed;top:20px;right:20px;"></div>
+    <script src="https://button.glitch.me/button.js"></script>
+  </body>
+</html>
